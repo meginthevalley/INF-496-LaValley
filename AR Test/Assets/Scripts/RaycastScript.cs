@@ -3,6 +3,7 @@ using System.Collections.Generic;
 using UnityEngine;
 using UnityEngine.XR.ARFoundation;
 using TMPro;
+using UnityEngine.EventSystems;
 
 public class RaycastScript : MonoBehaviour
 {
@@ -15,24 +16,49 @@ public class RaycastScript : MonoBehaviour
     //create a physics raycast hit
     RaycastHit p_hit;
     GameObject spawnedObject;
-    int score;
-    public TextMeshProUGUI scoreText;
+    char state = 'i';
+    private float scoreFull;
+    public TextMeshProUGUI scoreFullText;
+    private float scoreLove;
+    public TextMeshProUGUI scoreLoveText;
+    private float timeInState = 0;
+    public float scoreFullRate = 0.25f;
+    public float scoreLoveRate = 0.5f;
+
     // Start is called before the first frame update
     void Start()
     {
         ar_Manager = GetComponent<ARRaycastManager>();
         //get the component in children (can also do this with parents)
         cam= GetComponentInChildren<Camera>();
-        score = 0;
-        scoreText.text = "Score: " + score.ToString();
+        scoreFull = 100;
+        scoreFullText.text = "Full: " + scoreFull.ToString();
+        scoreLove = 100;
+        scoreLoveText.text = "Love: " + scoreLove.ToString();
     }
 
     // Update is called once per frame
     void Update()
     {
+        scoreFull -= Time.deltaTime * scoreFullRate;
+        scoreLove -= Time.deltaTime * scoreLoveRate;
+        if(state == 'f' || state == 'p')
+        {
+            timeInState += Time.deltaTime;
+            if(timeInState >= 5)
+            {
+                state = 'i';
+            }
+        }
         //Get touch input from player
         if(Input.touchCount > 0 || Input.GetMouseButtonDown(0))
         {
+            if(EventSystem.current.IsPointerOverGameObject())
+            {
+                print("UI Touch Detected");
+                //return breaks out of the input function
+                return;
+            }
             //Get position of that touch
             Vector3 position;
             if(Input.touchCount > 0)
@@ -50,9 +76,19 @@ public class RaycastScript : MonoBehaviour
             {
                 if(p_hit.transform.gameObject.CompareTag("cube"))
                 {
-                    //Increase score
-                    score += 1;
-                    scoreText.text = "Score: " + score.ToString();
+                    //Increase score if in feed state
+                    if(state == 'f')
+                    {
+                        scoreFull += 1;
+                        scoreFull = Mathf.Clamp(scoreFull, 0, 100);
+                        scoreFullText.text = "Full: " + Mathf.Round(scoreFull).ToString();
+                    }
+                    else if(state == 'p')
+                    {
+                        scoreLove += 1;
+                        scoreLove = Mathf.Clamp(scoreLove, 0, 100);
+                        scoreLoveText.text = "Love: " + Mathf.Round(scoreLove).ToString();
+                    }
             }
             }
             //Cast the AR ray (use the empty list you creates above)
@@ -71,5 +107,15 @@ public class RaycastScript : MonoBehaviour
                 }
             }
         }
+    }
+    public void EnterFeedState()
+    {
+        timeInState = 0;
+        state = 'f';
+    }
+    public void EnterPetState()
+    {
+        timeInState = 0;
+        state = 'p';
     }
 }
