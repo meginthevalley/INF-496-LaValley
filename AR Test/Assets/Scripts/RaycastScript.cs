@@ -16,7 +16,7 @@ public class RaycastScript : MonoBehaviour
     //create a physics raycast hit
     RaycastHit p_hit;
     GameObject spawnedObject;
-    char state = 'i';
+    private char state = 'i';
     private float scoreFull;
     public TextMeshProUGUI scoreFullText;
     private float scoreLove;
@@ -24,6 +24,9 @@ public class RaycastScript : MonoBehaviour
     private float timeInState = 0;
     public float scoreFullRate = 0.25f;
     public float scoreLoveRate = 0.5f;
+    Animator kittyAnim;
+    public float timeToSpendInState = 4;
+    public float waitingTime= 0;
 
     // Start is called before the first frame update
     void Start()
@@ -40,13 +43,27 @@ public class RaycastScript : MonoBehaviour
     // Update is called once per frame
     void Update()
     {
-        scoreFull -= Time.deltaTime * scoreFullRate;
-        scoreLove -= Time.deltaTime * scoreLoveRate;
+        if(state == 'i')
+        {
+           scoreLove -= Time.deltaTime * scoreLoveRate; 
+           scoreFull -= Time.deltaTime * scoreFullRate;
+           if(scoreFull >=130)
+            {
+                kittyAnim.SetTrigger("VomitTime");
+                waitingTime += Time.deltaTime;
+                scoreFull -= 50;
+            }
+            if(waitingTime>=timeToSpendInState)
+            {
+                kittyAnim.SetTrigger("IdleTime");
+            }
+        }
         if(state == 'f' || state == 'p')
         {
             timeInState += Time.deltaTime;
-            if(timeInState >= 5)
+            if(timeInState >= timeToSpendInState)
             {
+                kittyAnim.SetTrigger("IdleTime");
                 state = 'i';
             }
         }
@@ -74,20 +91,26 @@ public class RaycastScript : MonoBehaviour
             //cast the physics ray
             if(Physics.Raycast(r, out p_hit))
             {
-                if(p_hit.transform.gameObject.CompareTag("cube"))
+                if(p_hit.transform.gameObject.CompareTag("cat"))
                 {
                     //Increase score if in feed state
                     if(state == 'f')
                     {
                         scoreFull += 1;
-                        scoreFull = Mathf.Clamp(scoreFull, 0, 100);
-                        scoreFullText.text = "Full: " + Mathf.Round(scoreFull).ToString();
+                        scoreFull = Mathf.Clamp(scoreFull, 0, 150);
                     }
                     else if(state == 'p')
                     {
                         scoreLove += 1;
                         scoreLove = Mathf.Clamp(scoreLove, 0, 100);
-                        scoreLoveText.text = "Love: " + Mathf.Round(scoreLove).ToString();
+                        if(scoreLove >= 100)
+                        {
+                            kittyAnim.SetTrigger("HappyTime");
+                        }
+                    }
+                    else
+                    {
+                        kittyAnim.SetTrigger("IdleTime");
                     }
             }
             }
@@ -100,22 +123,31 @@ public class RaycastScript : MonoBehaviour
                 if(spawnedObject == null)
                 {
                     spawnedObject = Instantiate(spawnItem,hitPose.position, hitPose.rotation);
+                    kittyAnim = spawnedObject.GetComponentInChildren<Animator>();
                 }
                 else
                 {
                     spawnedObject.transform.position = hitPose.position;
                 }
+                Vector3 lookAtTarget = new Vector3(cam.transform.position.x, spawnedObject.transform.position.y, cam.transform.position.z);
+                spawnedObject.transform.LookAt(lookAtTarget);
             }
         }
+        scoreFullText.text = "Full: " + Mathf.Round(scoreFull).ToString();
+        scoreLoveText.text = "Love: " + Mathf.Round(scoreLove).ToString();
     }
     public void EnterFeedState()
     {
         timeInState = 0;
+        waitingTime =0;
         state = 'f';
+        kittyAnim.SetTrigger("FeedTime");
     }
     public void EnterPetState()
     {
         timeInState = 0;
         state = 'p';
+        kittyAnim.SetTrigger("PetTime");
+
     }
 }

@@ -5,6 +5,10 @@ TagManager:
   serializedVersion: 2
   tags:
   - cube
+  - cat
+  - Love
+  - Feed
+  - Vomit
   layers:
   - Default
   - TransparentFX
