@@ -148,6 +148,5 @@ public class RaycastScript : MonoBehaviour
         timeInState = 0;
         state = 'p';
         kittyAnim.SetTrigger("PetTime");
-
     }
 }
